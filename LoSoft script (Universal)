@@ -1,0 +1,227 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "LoftSoft",
+    LoadingTitle = "Loading . . . LOFTSOFT INJECTED",
+    LoadingSubtitle = "By 71005",
+    ConfigurationSaving = {
+       Enabled = false,
+       FolderName = nil,
+       FileName = "LoftSoft"
+    },
+    Discord = {
+       Enabled = false,
+       Invite = "noinvitelink",
+       RememberJoins = true
+    },
+    KeySystem = false,
+})
+
+local MainTab = Window:CreateTab("Based on Pandora (thanks Onyx/chunk)")
+local MainSection = MainTab:CreateSection("menu")
+
+local espEnabled = false
+local aimbotEnabled = false
+
+local espObjects = {}
+
+local function toggleESP(state)
+    if state then
+        local function CreateESPBox(BodyPart, Color)
+            local ESPBox = Instance.new("BoxHandleAdornment")
+            ESPBox.Name = "ESPBox"
+            ESPBox.Adornee = BodyPart
+            ESPBox.AlwaysOnTop = true
+            ESPBox.ZIndex = 5
+            ESPBox.Size = BodyPart.Size
+            ESPBox.Transparency = 0.6
+            ESPBox.Color3 = Color
+            ESPBox.Parent = BodyPart
+            return ESPBox
+        end
+
+        local function CreateESPLabel(Player)
+            local Character = Player.Character
+            if Character then
+                local Head = Character:FindFirstChild("Head")
+                if Head then
+                    local BillboardGui = Instance.new("BillboardGui")
+                    BillboardGui.Name = "ESPLabel"
+                    BillboardGui.Adornee = Head
+                    BillboardGui.AlwaysOnTop = true
+                    BillboardGui.Size = UDim2.new(0, 200, 0, 50)
+                    BillboardGui.StudsOffset = Vector3.new(0, 2, 0)
+                    BillboardGui.Parent = Head
+
+                    local TextLabel = Instance.new("TextLabel")
+                    TextLabel.Size = UDim2.new(1, 0, 1, 0)
+                    TextLabel.BackgroundTransparency = 1
+                    TextLabel.TextColor3 = Player.TeamColor.Color
+                    TextLabel.TextStrokeTransparency = 0.5
+                    TextLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+                    TextLabel.TextSize = 20
+                    TextLabel.Font = Enum.Font.SourceSansBold
+                    TextLabel.Text = Player.Name
+                    TextLabel.Parent = BillboardGui
+
+                    local HealthLabel = Instance.new("TextLabel")
+                    HealthLabel.Size = UDim2.new(1, 0, 0, 20)
+                    HealthLabel.BackgroundTransparency = 1
+                    HealthLabel.TextColor3 = Player.TeamColor.Color
+                    HealthLabel.TextStrokeTransparency = 0.5
+                    HealthLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+                    HealthLabel.TextSize = 16
+                    HealthLabel.Font = Enum.Font.SourceSans
+                    HealthLabel.Position = UDim2.new(0, 0, 0.8, 0)
+                    HealthLabel.Text = "Health: 100%"
+                    HealthLabel.Parent = BillboardGui
+
+                    return BillboardGui
+                end
+            end
+            return nil
+        end
+
+        local function ApplyESP(Player)
+            local Character = Player.Character
+            if Character then
+                local Color = Player.TeamColor.Color
+                for _, BodyPart in pairs(Character:GetChildren()) do
+                    if BodyPart:IsA("BasePart") then
+                        local espBox = CreateESPBox(BodyPart, Color)
+                        table.insert(espObjects, espBox) -- Добавляем созданный ESPBox в список объектов
+                    end
+                end
+
+                local espLabel = CreateESPLabel(Player)
+                if espLabel then
+                    table.insert(espObjects, espLabel)
+
+                    local function UpdateHealth()
+                        local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+                        if Humanoid then
+                            local maxHealth = Humanoid.MaxHealth
+                            local currentHealth = Humanoid.Health
+                            espLabel:FindFirstChild("HealthLabel").Text = "Health: " .. math.floor((currentHealth / maxHealth) * 100) .. "%"
+                        end
+                    end
+
+                    game:GetService("RunService").RenderStepped:Connect(function()
+                        UpdateHealth()
+                    end)
+                end
+            end
+        end
+
+        local function RemoveESP(Player)
+            local Character = Player.Character
+            if Character then
+                for _, BodyPart in pairs(Character:GetChildren()) do
+                    local espBox = BodyPart:FindFirstChild("ESPBox")
+                    if espBox then
+                        espBox:Destroy()
+                    end
+                end
+                local Head = Character:FindFirstChild("Head")
+                if Head then
+                    local espLabel = Head:FindFirstChild("ESPLabel")
+                    if espLabel then
+                        espLabel:Destroy()
+                    end
+                end
+            end
+        end
+
+        for _, Player in pairs(game.Players:GetPlayers()) do
+            if Player ~= game.Players.LocalPlayer then
+                ApplyESP(Player)
+                Player.CharacterAdded:Connect(function()
+                    wait(1)
+                    ApplyESP(Player)
+                end)
+            end
+        end
+
+        game.Players.PlayerAdded:Connect(function(Player)
+            Player.CharacterAdded:Connect(function()
+                wait(0.5)
+                ApplyESP(Player)
+            end)
+        end)
+
+        game.Players.PlayerRemoving:Connect(function(Player)
+            RemoveESP(Player)
+        end)
+
+    else
+        for _, obj in pairs(espObjects) do
+            if obj and obj.Parent then
+                obj:Destroy()
+            end
+        end
+        espObjects = {}
+    end
+end
+
+MainTab:CreateToggle({
+    Name = "ESP",
+    CurrentValue = false,
+    Flag = "ESP",
+    Callback = function(Value)
+        espEnabled = Value
+        toggleESP(espEnabled)
+    end,
+})
+
+local mouse = game.Players.LocalPlayer:GetMouse()
+local function getClosestPlayerToCursor()
+    local closestPlayer = nil
+    local shortestDistance = math.huge
+
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local pos = game.Workspace.CurrentCamera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+            local magnitude = (Vector2.new(pos.X, pos.Y) - Vector2.new(mouse.X, mouse.Y)).magnitude
+
+            if magnitude < shortestDistance then
+                closestPlayer = player
+                shortestDistance = magnitude
+            end
+        end
+    end
+
+    return closestPlayer
+end
+
+local aimAt = nil
+
+mouse.Button2Down:Connect(function()
+    if aimbotEnabled then
+        aimAt = getClosestPlayerToCursor()
+    end
+end)
+
+mouse.Button2Up:Connect(function()
+    aimAt = nil
+end)
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    if aimAt and aimbotEnabled then
+        game.Workspace.CurrentCamera.CFrame = CFrame.new(game.Workspace.CurrentCamera.CFrame.Position, aimAt.Character.HumanoidRootPart.Position)
+    end
+end)
+
+MainTab:CreateToggle({
+    Name = "Aimbot",
+    CurrentValue = false,
+    Flag = "Aimbot",
+    Callback = function(Value)
+        aimbotEnabled = Value
+    end,
+})
+
+Rayfield:Notify({
+    Title = "LoftSoft Loaded",
+    Content = "All features are ready to use!",
+    Duration = 5,
+})
